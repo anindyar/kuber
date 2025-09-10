@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Kubernetes Client Library Contract
+  description: Internal API contract for the kubernetes-client library
+  version: 0.1.0
+
+paths:
+  # Cluster Management
+  /clusters/connect:
+    post:
+      summary: Connect to a Kubernetes cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context:
+                  type: string
+                  description: kubectl context name
+                kubeconfig:
+                  type: string
+                  description: Path to kubeconfig file
+              required:
+                - context
+      responses:
+        '200':
+          description: Successfully connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterInfo'
+        '401':
+          description: Authentication failed
+        '403':
+          description: Insufficient permissions
+        '500':
+          description: Connection failed
+
+  /clusters/{context}/resources:
+    get:
+      summary: List resources in cluster
+      parameters:
+        - name: context
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: query
+          schema:
+            type: string
+          description: Filter by resource kind
+        - name: namespace
+          in: query
+          schema:
+            type: string
+          description: Filter by namespace
+        - name: labelSelector
+          in: query
+          schema:
+            type: string
+          description: Kubernetes label selector
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Resource'
+                  totalCount:
+                    type: integer
+
+  /clusters/{context}/resources/{kind}/{namespace}/{name}:
+    get:
+      summary: Get specific resource
+      parameters:
+        - name: context
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resource details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+        '404':
+          description: Resource not found
+
+    put:
+      summary: Update resource
+      parameters:
+        - name: context
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resource'
+      responses:
+        '200':
+          description: Resource updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+        '422':
+          description: Validation failed
+
+    delete:
+      summary: Delete resource
+      parameters:
+        - name: context
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Resource deleted
+        '404':
+          description: Resource not found
+
+  # Log Streaming
+  /clusters/{context}/pods/{namespace}/{name}/logs:
+    get:
+      summary: Stream pod logs
+      parameters:
+        - name: context
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: container
+          in: query
+          schema:
+            type: string
+          description: Container name (optional)
+        - name: follow
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Follow log stream
+        - name: tailLines
+          in: query
+          schema:
+            type: integer
+            default: 100
+          description: Number of lines to tail
+      responses:
+        '200':
+          description: Log stream
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Pod not found
+
+  # Shell Access
+  /clusters/{context}/pods/{namespace}/{name}/exec:
+    post:
+      summary: Execute command in pod
+      parameters:
+        - name: context
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                container:
+                  type: string
+                command:
+                  type: array
+                  items:
+                    type: string
+                stdin:
+                  type: boolean
+                  default: true
+                stdout:
+                  type: boolean
+                  default: true
+                stderr:
+                  type: boolean
+                  default: true
+                tty:
+                  type: boolean
+                  default: true
+              required:
+                - command
+      responses:
+        '101':
+          description: WebSocket connection established
+        '404':
+          description: Pod not found
+        '422':
+          description: Container not found
+
+components:
+  schemas:
+    ClusterInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        endpoint:
+          type: string
+        version:
+          type: string
+        nodeCount:
+          type: integer
+        status:
+          type: string
+          enum: [Connected, Disconnected, Error]
+
+    Resource:
+      type: object
+      properties:
+        kind:
+          type: string
+        apiVersion:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        spec:
+          type: object
+          additionalProperties: true
+        status:
+          type: object
+          additionalProperties: true
+
+    Metadata:
+      type: object
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+        uid:
+          type: string
+        resourceVersion:
+          type: string
+        creationTimestamp:
+          type: string
+          format: date-time
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        annotations:
+          type: object
+          additionalProperties:
+            type: string

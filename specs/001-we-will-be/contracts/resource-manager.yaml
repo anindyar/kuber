@@ -1,0 +1,368 @@
+openapi: 3.0.3
+info:
+  title: Resource Manager Library Contract
+  description: Internal API contract for resource discovery, caching, and real-time updates
+  version: 0.1.0
+
+paths:
+  # Resource Discovery
+  /discovery/scan:
+    post:
+      summary: Scan cluster for available resources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                namespaces:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific namespaces to scan (empty = all)
+                resourceTypes:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific resource types to scan (empty = all)
+              required:
+                - cluster
+      responses:
+        '200':
+          description: Scan completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanResult'
+
+  # Cache Management
+  /cache/initialize:
+    post:
+      summary: Initialize resource cache
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxSize:
+                  type: integer
+                  default: 10000
+                ttlSeconds:
+                  type: integer
+                  default: 300
+                clusters:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Cache initialized
+
+  /cache/get:
+    get:
+      summary: Get resources from cache
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: query
+          schema:
+            type: string
+        - name: namespace
+          in: query
+          schema:
+            type: string
+        - name: labelSelector
+          in: query
+          schema:
+            type: string
+        - name: fresh
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Force refresh from API
+      responses:
+        '200':
+          description: Cached resources
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CachedResource'
+                  fromCache:
+                    type: boolean
+                  lastUpdate:
+                    type: string
+                    format: date-time
+
+  /cache/invalidate:
+    post:
+      summary: Invalidate cache entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                kind:
+                  type: string
+                namespace:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Cache invalidated
+
+  # Real-time Updates
+  /watch/start:
+    post:
+      summary: Start watching resources for changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                resourceType:
+                  type: string
+                namespace:
+                  type: string
+                labelSelector:
+                  type: string
+                callback:
+                  type: string
+                  description: Callback function identifier
+              required:
+                - cluster
+                - resourceType
+                - callback
+      responses:
+        '200':
+          description: Watch started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchHandle'
+
+  /watch/{watchId}/stop:
+    post:
+      summary: Stop watching resources
+      parameters:
+        - name: watchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Watch stopped
+
+  # Resource Operations
+  /resources/scale:
+    post:
+      summary: Scale a resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                kind:
+                  type: string
+                namespace:
+                  type: string
+                name:
+                  type: string
+                replicas:
+                  type: integer
+              required:
+                - cluster
+                - kind
+                - namespace
+                - name
+                - replicas
+      responses:
+        '200':
+          description: Resource scaled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScaleResult'
+        '422':
+          description: Resource does not support scaling
+
+  /resources/restart:
+    post:
+      summary: Restart a resource (deployment, statefulset, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                kind:
+                  type: string
+                namespace:
+                  type: string
+                name:
+                  type: string
+              required:
+                - cluster
+                - kind
+                - namespace
+                - name
+      responses:
+        '200':
+          description: Resource restart initiated
+        '422':
+          description: Resource does not support restart
+
+  # Event Streaming
+  /events/stream:
+    get:
+      summary: Stream Kubernetes events
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: query
+          schema:
+            type: string
+        - name: resourceName
+          in: query
+          schema:
+            type: string
+        - name: follow
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+components:
+  schemas:
+    ScanResult:
+      type: object
+      properties:
+        cluster:
+          type: string
+        resourceTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceTypeInfo'
+        namespaces:
+          type: array
+          items:
+            type: string
+        totalResources:
+          type: integer
+        scanDuration:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+
+    ResourceTypeInfo:
+      type: object
+      properties:
+        kind:
+          type: string
+        apiVersion:
+          type: string
+        namespaced:
+          type: boolean
+        count:
+          type: integer
+        permissions:
+          type: array
+          items:
+            type: string
+            enum: [list, get, create, update, delete, watch]
+
+    CachedResource:
+      type: object
+      properties:
+        cluster:
+          type: string
+        kind:
+          type: string
+        apiVersion:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        spec:
+          type: object
+          additionalProperties: true
+        status:
+          type: object
+          additionalProperties: true
+        cacheTime:
+          type: string
+          format: date-time
+        resourceVersion:
+          type: string
+
+    WatchHandle:
+      type: object
+      properties:
+        watchId:
+          type: string
+        cluster:
+          type: string
+        resourceType:
+          type: string
+        namespace:
+          type: string
+        started:
+          type: string
+          format: date-time
+
+    ScaleResult:
+      type: object
+      properties:
+        previousReplicas:
+          type: integer
+        targetReplicas:
+          type: integer
+        currentReplicas:
+          type: integer
+        status:
+          type: string
+          enum: [scaling, completed, failed]

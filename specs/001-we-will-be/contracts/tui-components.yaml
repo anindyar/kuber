@@ -1,0 +1,372 @@
+openapi: 3.0.3
+info:
+  title: TUI Components Library Contract
+  description: Internal API contract for reusable terminal UI components
+  version: 0.1.0
+
+paths:
+  # Resource Table Component
+  /components/resource-table/init:
+    post:
+      summary: Initialize resource table component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                columns:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TableColumn'
+                data:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                options:
+                  $ref: '#/components/schemas/TableOptions'
+      responses:
+        '200':
+          description: Component initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentHandle'
+
+  /components/resource-table/{id}/update:
+    post:
+      summary: Update table data
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                preserveSelection:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Data updated
+
+  # Log Viewer Component
+  /components/log-viewer/init:
+    post:
+      summary: Initialize log viewer component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  $ref: '#/components/schemas/LogSource'
+                options:
+                  $ref: '#/components/schemas/LogViewerOptions'
+      responses:
+        '200':
+          description: Component initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentHandle'
+
+  /components/log-viewer/{id}/append:
+    post:
+      summary: Append log entries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entries:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LogEntry'
+                autoScroll:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Entries appended
+
+  # Metrics Chart Component
+  /components/metrics-chart/init:
+    post:
+      summary: Initialize metrics chart component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chartType:
+                  type: string
+                  enum: [line, bar, sparkline]
+                metrics:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MetricSeries'
+                options:
+                  $ref: '#/components/schemas/ChartOptions'
+      responses:
+        '200':
+          description: Component initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentHandle'
+
+  # Navigation Component
+  /components/navigation/init:
+    post:
+      summary: Initialize navigation component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/NavigationItem'
+                style:
+                  type: string
+                  enum: [sidebar, tabs, breadcrumbs]
+      responses:
+        '200':
+          description: Component initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentHandle'
+
+  # Resource Editor Component
+  /components/resource-editor/init:
+    post:
+      summary: Initialize resource editor component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resource:
+                  type: object
+                  additionalProperties: true
+                format:
+                  type: string
+                  enum: [yaml, json]
+                  default: yaml
+                readOnly:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Component initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentHandle'
+
+components:
+  schemas:
+    ComponentHandle:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+
+    TableColumn:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        width:
+          type: integer
+        sortable:
+          type: boolean
+          default: true
+        formatter:
+          type: string
+          enum: [string, timestamp, duration, bytes, status]
+      required:
+        - key
+        - title
+
+    TableOptions:
+      type: object
+      properties:
+        selectable:
+          type: boolean
+          default: true
+        multiSelect:
+          type: boolean
+          default: false
+        sortable:
+          type: boolean
+          default: true
+        filterable:
+          type: boolean
+          default: true
+        pagination:
+          type: boolean
+          default: false
+        pageSize:
+          type: integer
+          default: 50
+
+    LogSource:
+      type: object
+      properties:
+        cluster:
+          type: string
+        namespace:
+          type: string
+        pod:
+          type: string
+        container:
+          type: string
+      required:
+        - cluster
+        - namespace
+        - pod
+
+    LogViewerOptions:
+      type: object
+      properties:
+        maxLines:
+          type: integer
+          default: 1000
+        wrapLines:
+          type: boolean
+          default: true
+        showTimestamps:
+          type: boolean
+          default: true
+        colorize:
+          type: boolean
+          default: true
+        filterPatterns:
+          type: array
+          items:
+            type: string
+
+    LogEntry:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [debug, info, warning, error]
+        message:
+          type: string
+        source:
+          type: string
+      required:
+        - timestamp
+        - message
+
+    MetricSeries:
+      type: object
+      properties:
+        name:
+          type: string
+        unit:
+          type: string
+        color:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPoint'
+      required:
+        - name
+        - data
+
+    DataPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+      required:
+        - timestamp
+        - value
+
+    ChartOptions:
+      type: object
+      properties:
+        title:
+          type: string
+        height:
+          type: integer
+          default: 10
+        showAxes:
+          type: boolean
+          default: true
+        showLegend:
+          type: boolean
+          default: true
+        timeRange:
+          type: string
+          enum: [1m, 5m, 15m, 1h, 6h, 24h]
+          default: 5m
+
+    NavigationItem:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        icon:
+          type: string
+        action:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/NavigationItem'
+      required:
+        - id
+        - label

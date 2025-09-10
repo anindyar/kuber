@@ -1,0 +1,456 @@
+openapi: 3.0.3
+info:
+  title: Metrics Collector Library Contract
+  description: Internal API contract for performance data collection and aggregation
+  version: 0.1.0
+
+paths:
+  # Metrics Collection
+  /collection/start:
+    post:
+      summary: Start metrics collection for resources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                targets:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MetricTarget'
+                interval:
+                  type: string
+                  default: "30s"
+                  description: Collection interval (e.g., "30s", "1m")
+                retention:
+                  type: string
+                  default: "1h"
+                  description: How long to keep metrics
+              required:
+                - cluster
+                - targets
+      responses:
+        '200':
+          description: Collection started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionHandle'
+
+  /collection/{collectionId}/stop:
+    post:
+      summary: Stop metrics collection
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Collection stopped
+
+  # Metrics Retrieval
+  /metrics/query:
+    get:
+      summary: Query collected metrics
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: resource
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "Format: kind/namespace/name"
+        - name: metric
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [cpu, memory, network_rx, network_tx, disk_io]
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            default: "5m"
+            enum: [1m, 5m, 15m, 1h, 6h, 24h]
+        - name: aggregation
+          in: query
+          schema:
+            type: string
+            default: "avg"
+            enum: [avg, min, max, sum, count]
+      responses:
+        '200':
+          description: Metric data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricData'
+
+  /metrics/realtime:
+    get:
+      summary: Get real-time metrics stream
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: resources
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+          description: "Array of resource identifiers: kind/namespace/name"
+        - name: metrics
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [cpu, memory, network_rx, network_tx, disk_io]
+      responses:
+        '200':
+          description: Real-time metrics stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # Cluster Metrics
+  /metrics/cluster/overview:
+    get:
+      summary: Get cluster-wide metrics overview
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cluster metrics overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterMetrics'
+
+  /metrics/cluster/nodes:
+    get:
+      summary: Get node-level metrics
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: node
+          in: query
+          schema:
+            type: string
+          description: Specific node name (optional)
+      responses:
+        '200':
+          description: Node metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NodeMetrics'
+
+  # Historical Data
+  /metrics/history/export:
+    post:
+      summary: Export historical metrics data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                resources:
+                  type: array
+                  items:
+                    type: string
+                timeRange:
+                  type: object
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+                format:
+                  type: string
+                  enum: [json, csv, prometheus]
+                  default: json
+              required:
+                - cluster
+                - resources
+                - timeRange
+      responses:
+        '200':
+          description: Exported data
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  # Alerts and Thresholds
+  /alerts/configure:
+    post:
+      summary: Configure metric alerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster:
+                  type: string
+                alerts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AlertRule'
+              required:
+                - cluster
+                - alerts
+      responses:
+        '200':
+          description: Alerts configured
+
+  /alerts/check:
+    get:
+      summary: Check for active alerts
+      parameters:
+        - name: cluster
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Active alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActiveAlert'
+
+components:
+  schemas:
+    MetricTarget:
+      type: object
+      properties:
+        kind:
+          type: string
+        namespace:
+          type: string
+        name:
+          type: string
+        metrics:
+          type: array
+          items:
+            type: string
+            enum: [cpu, memory, network_rx, network_tx, disk_io]
+      required:
+        - kind
+        - namespace
+        - name
+        - metrics
+
+    CollectionHandle:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        cluster:
+          type: string
+        targets:
+          type: integer
+        interval:
+          type: string
+        started:
+          type: string
+          format: date-time
+
+    MetricData:
+      type: object
+      properties:
+        metric:
+          type: string
+        resource:
+          type: string
+        unit:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricPoint'
+        aggregation:
+          type: string
+        timeRange:
+          type: string
+
+    MetricPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    ClusterMetrics:
+      type: object
+      properties:
+        cluster:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        nodes:
+          type: object
+          properties:
+            total:
+              type: integer
+            ready:
+              type: integer
+            cpuCapacity:
+              type: number
+            memoryCapacity:
+              type: number
+        pods:
+          type: object
+          properties:
+            total:
+              type: integer
+            running:
+              type: integer
+            pending:
+              type: integer
+            failed:
+              type: integer
+        resources:
+          type: object
+          properties:
+            cpuUsage:
+              type: number
+            memoryUsage:
+              type: number
+            cpuPercent:
+              type: number
+            memoryPercent:
+              type: number
+
+    NodeMetrics:
+      type: object
+      properties:
+        nodeName:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        cpu:
+          type: object
+          properties:
+            usage:
+              type: number
+            capacity:
+              type: number
+            percent:
+              type: number
+        memory:
+          type: object
+          properties:
+            usage:
+              type: number
+            capacity:
+              type: number
+            percent:
+              type: number
+        network:
+          type: object
+          properties:
+            rxBytes:
+              type: number
+            txBytes:
+              type: number
+        storage:
+          type: object
+          properties:
+            usage:
+              type: number
+            capacity:
+              type: number
+            percent:
+              type: number
+        pods:
+          type: integer
+
+    AlertRule:
+      type: object
+      properties:
+        name:
+          type: string
+        resource:
+          type: string
+        metric:
+          type: string
+        condition:
+          type: string
+          enum: [">", ">=", "<", "<=", "==", "!="]
+        threshold:
+          type: number
+        duration:
+          type: string
+          description: "How long condition must be true (e.g., '5m')"
+        severity:
+          type: string
+          enum: [info, warning, critical]
+      required:
+        - name
+        - resource
+        - metric
+        - condition
+        - threshold
+
+    ActiveAlert:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/AlertRule'
+        triggered:
+          type: string
+          format: date-time
+        currentValue:
+          type: number
+        resource:
+          type: string
+        status:
+          type: string
+          enum: [firing, resolved]
