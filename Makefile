@@ -109,6 +109,50 @@ watch: ## Watch for changes and rebuild (requires entr)
 	@which entr > /dev/null || (echo "entr not found. Install with your package manager" && exit 1)
 	@find . -name "*.go" | entr -r make run
 
+# Cross-platform build targets
+PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
+RELEASE_DIR := release
+
+build-all: ## Build for all platforms
+	@echo "Building for all platforms..."
+	@mkdir -p $(RELEASE_DIR)
+	@$(foreach PLATFORM,$(PLATFORMS), \
+		GOOS=$(word 1,$(subst /, ,$(PLATFORM))) \
+		GOARCH=$(word 2,$(subst /, ,$(PLATFORM))) \
+		CGO_ENABLED=0 go build $(LDFLAGS) \
+		-o $(RELEASE_DIR)/$(BINARY_NAME)-$(PLATFORM)$(if $(findstring windows,$(PLATFORM)),.exe,) \
+		$(MAIN_PATH) && echo "Built $(BINARY_NAME)-$(PLATFORM)" || exit 1;)
+
+package-releases: build-all ## Package releases for distribution
+	@echo "Packaging releases..."
+	@cd $(RELEASE_DIR) && \
+	for binary in $(BINARY_NAME)-*; do \
+		if [ -f "$$binary" ]; then \
+			platform=$$(echo "$$binary" | sed 's/$(BINARY_NAME)-//'); \
+			if [[ "$$binary" == *".exe" ]]; then \
+				platform=$$(echo "$$platform" | sed 's/.exe$$//'); \
+				zip "$$binary.zip" "$$binary"; \
+			else \
+				tar -czf "$$binary.tar.gz" "$$binary"; \
+			fi; \
+			echo "Packaged $$binary"; \
+		fi; \
+	done
+
+release: clean package-releases ## Create a complete release
+	@echo "Release $(VERSION) created in $(RELEASE_DIR)/"
+	@ls -la $(RELEASE_DIR)/
+
+install-system: build ## Install to /usr/local/bin (requires sudo)
+	@echo "Installing $(BINARY_NAME) to /usr/local/bin..."
+	@sudo install -m 755 $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME)
+	@echo "Installation complete. You can now run '$(BINARY_NAME)' from anywhere."
+
+uninstall-system: ## Uninstall from /usr/local/bin
+	@echo "Uninstalling $(BINARY_NAME)..."
+	@sudo rm -f /usr/local/bin/$(BINARY_NAME)
+	@echo "$(BINARY_NAME) uninstalled."
+
 # Show build info
 info: ## Show build information
 	@echo "Binary Name: $(BINARY_NAME)"
