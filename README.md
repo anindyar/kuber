@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Go Version](https://img.shields.io/badge/go-1.24+-blue.svg)
-![Release](https://img.shields.io/github/v/release/your-org/kuber?include_prereleases)
+![Release](https://img.shields.io/github/v/release/anindyar/kuber?include_prereleases)
 
 A powerful, intuitive terminal-based Kubernetes cluster manager built with Go and Bubble Tea. kUber provides an enhanced user experience for managing Kubernetes resources with real-time log streaming, multi-container support, and aggregated logging for deployments.
 
@@ -24,7 +24,7 @@ A powerful, intuitive terminal-based Kubernetes cluster manager built with Go an
 ### One-line Installation (Linux/macOS)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-org/kuber/main/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/anindyar/kuber/main/install.sh | sh
 ```
 
 This will download the latest release and install it to `/usr/local/bin/kuber`.
@@ -33,12 +33,12 @@ This will download the latest release and install it to `/usr/local/bin/kuber`.
 
 #### Download Pre-built Binary
 
-1. Download the latest release for your platform from the [releases page](https://github.com/your-org/kuber/releases)
+1. Download the latest release for your platform from the [releases page](https://github.com/anindyar/kuber/releases)
 2. Extract and install:
 
 ```bash
 # For Linux x64
-wget https://github.com/your-org/kuber/releases/latest/download/kuber-linux-amd64.tar.gz
+wget https://github.com/anindyar/kuber/releases/latest/download/kuber-linux-amd64.tar.gz
 tar -xzf kuber-linux-amd64.tar.gz
 sudo mv kuber /usr/local/bin/
 chmod +x /usr/local/bin/kuber
@@ -52,7 +52,7 @@ chmod +x /usr/local/bin/kuber
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/kuber.git
+git clone https://github.com/anindyar/kuber.git
 cd kuber
 
 # Build the application
@@ -190,7 +190,7 @@ clusters:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/kuber.git
+git clone https://github.com/anindyar/kuber.git
 cd kuber
 
 # Install dependencies
@@ -294,7 +294,7 @@ kubectl auth can-i list services
 - Check if containers have shell access (bash/sh)
 - Verify RBAC permissions for log access
 
-For more troubleshooting, see our [FAQ](https://github.com/your-org/kuber/wiki/FAQ).
+For more troubleshooting, see our [FAQ](https://github.com/anindyar/kuber/wiki/FAQ).
 
 ## 📜 License
 
@@ -309,10 +309,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [Documentation](https://github.com/your-org/kuber/wiki)
-- [Releases](https://github.com/your-org/kuber/releases)
-- [Issues](https://github.com/your-org/kuber/issues)
-- [Discussions](https://github.com/your-org/kuber/discussions)
+- [Documentation](https://github.com/anindyar/kuber/wiki)
+- [Releases](https://github.com/anindyar/kuber/releases)
+- [Issues](https://github.com/anindyar/kuber/issues)
+- [Discussions](https://github.com/anindyar/kuber/discussions)
 
 ---
 

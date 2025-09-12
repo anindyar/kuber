@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/your-org/kuber/src/models"
+	"github.com/anindyar/kuber/src/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/your-org/kuber/src/models"
+	"github.com/anindyar/kuber/src/models"
 )
 
 // MetricsAggregator provides metric aggregation functionality

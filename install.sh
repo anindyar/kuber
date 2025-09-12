@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-REPO="your-org/kuber"
+REPO="anindyar/kuber"
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="kuber"
 GITHUB_API_URL="https://api.github.com/repos/${REPO}/releases/latest"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/your-org/kuber/src/models"
+	"github.com/anindyar/kuber/src/models"
 )
 
 // Collector interface for metric collectors

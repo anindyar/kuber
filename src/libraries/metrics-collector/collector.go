@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	kubernetesclient "github.com/your-org/kuber/src/libraries/kubernetes-client"
-	"github.com/your-org/kuber/src/models"
+	kubernetesclient "github.com/anindyar/kuber/src/libraries/kubernetes-client"
+	"github.com/anindyar/kuber/src/models"
 )
 
 // MetricsCollector provides centralized metrics collection for Kubernetes resources

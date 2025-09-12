@@ -22,7 +22,7 @@ linters-settings:
   lll:
     line-length: 140
   goimports:
-    local-prefixes: github.com/your-org/kuber
+    local-prefixes: github.com/anindyar/kuber
   gocritic:
     enabled-tags:
       - diagnostic

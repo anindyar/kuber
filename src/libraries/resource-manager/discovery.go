@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	kubernetesclient "github.com/your-org/kuber/src/libraries/kubernetes-client"
+	kubernetesclient "github.com/anindyar/kuber/src/libraries/kubernetes-client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 )

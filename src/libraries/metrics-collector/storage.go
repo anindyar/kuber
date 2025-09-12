@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/your-org/kuber/src/models"
+	"github.com/anindyar/kuber/src/models"
 )
 
 // MetricsStorage provides storage for collected metrics

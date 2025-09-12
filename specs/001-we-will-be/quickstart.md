@@ -11,7 +11,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/kuber.git
+git clone https://github.com/anindyar/kuber.git
 cd kuber
 
 # Build the application

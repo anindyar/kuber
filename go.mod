@@ -1,4 +1,4 @@
-module github.com/your-org/kuber
+module github.com/anindyar/kuber
 
 go 1.24.0
 
