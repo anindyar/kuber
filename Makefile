@@ -1,12 +1,8 @@
-.PHONY: build test lint clean install run help
+# kUber & kTop Build System
+.PHONY: build build-all build-kuber build-ktop clean install test help
 
 # Build variables
-BINARY_NAME=kuber
 BUILD_DIR=bin
-GO_VERSION=1.21
-MAIN_PATH=./cmd/kuber
-
-# Version information
 VERSION ?= $(shell git describe --tags --always --dirty)
 BUILD_TIME ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 GIT_COMMIT ?= $(shell git rev-parse HEAD)
@@ -14,17 +10,28 @@ GIT_COMMIT ?= $(shell git rev-parse HEAD)
 # Go build flags
 LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)"
 
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+# Default target
+all: build-all
 
-build: ## Build the application
-	@echo "Building $(BINARY_NAME)..."
+# Build both versions
+build-all: build-kuber build-ktop
+
+# Build full kUber (with editing capabilities)
+build-kuber: ## Build kUber (full-featured version)
+	@echo "🔨 Building kUber (full-featured version)..."
 	@mkdir -p $(BUILD_DIR)
-	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
-	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/kuber ./cmd/kuber
+	@echo "✅ kUber built successfully at $(BUILD_DIR)/kuber"
+
+# Build lightweight kTop (monitoring only)  
+build-ktop: ## Build kTop (lightweight monitoring version)
+	@echo "🔨 Building kTop (lightweight monitoring version)..."
+	@mkdir -p $(BUILD_DIR)
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/ktop ./cmd/ktop
+	@echo "✅ kTop built successfully at $(BUILD_DIR)/ktop"
+
+# Legacy build target (builds kUber for compatibility)
+build: build-kuber
 
 test: ## Run all tests
 	@echo "Running tests..."
@@ -65,9 +72,27 @@ clean: ## Clean build artifacts
 	@rm -f coverage.out coverage.html
 	@go clean
 
-install: build ## Install the binary to $GOPATH/bin
-	@echo "Installing $(BINARY_NAME)..."
-	@go install $(LDFLAGS) $(MAIN_PATH)
+install: build-all ## Install both binaries to system
+	@echo "📦 Installing kUber and kTop..."
+	@sudo mkdir -p /usr/local/bin
+	@sudo cp $(BUILD_DIR)/kuber /usr/local/bin/kuber
+	@sudo cp $(BUILD_DIR)/ktop /usr/local/bin/ktop
+	@sudo chmod +x /usr/local/bin/kuber /usr/local/bin/ktop
+	@echo "✅ Installed kuber and ktop to /usr/local/bin/"
+
+install-kuber: build-kuber ## Install only kUber (full version)
+	@echo "📦 Installing kUber..."
+	@sudo mkdir -p /usr/local/bin
+	@sudo cp $(BUILD_DIR)/kuber /usr/local/bin/kuber
+	@sudo chmod +x /usr/local/bin/kuber
+	@echo "✅ Installed kuber to /usr/local/bin/"
+
+install-ktop: build-ktop ## Install only kTop (monitoring version)
+	@echo "📦 Installing kTop..."
+	@sudo mkdir -p /usr/local/bin
+	@sudo cp $(BUILD_DIR)/ktop /usr/local/bin/ktop
+	@sudo chmod +x /usr/local/bin/ktop
+	@echo "✅ Installed ktop to /usr/local/bin/"
 
 run: build ## Build and run the application
 	@echo "Running $(BINARY_NAME)..."

@@ -6,6 +6,26 @@
 
 A powerful, intuitive terminal-based Kubernetes cluster manager built with Go and Bubble Tea. kUber provides an enhanced user experience for managing Kubernetes resources with real-time log streaming, multi-container support, and aggregated logging for deployments.
 
+## 🎯 Two Versions Available
+
+This repository provides two tools optimized for different use cases:
+
+### 📊 **kTop** - Lightweight Monitoring (Read-Only)
+- **Perfect for**: Production monitoring, operations teams, security-conscious environments
+- **Features**: Full dashboard, logs viewing with search/follow, shell access, resource inspection
+- **Security**: Read-only access, no resource modifications
+- **Memory**: 15-30MB footprint
+- **Documentation**: [kTop README](cmd/ktop/README.md)
+
+### ⚡ **kUber** - Full-Featured Manager  
+- **Perfect for**: Development, administration, full cluster management
+- **Features**: Everything in kTop + resource editing, YAML editing
+- **Security**: Full cluster access with modification capabilities  
+- **Memory**: 20-50MB footprint
+- **Documentation**: Continue reading below
+
+---
+
 ## ✨ Features
 
 - 🚀 **Intuitive Terminal UI** - Clean, responsive interface built with Bubble Tea
@@ -21,32 +41,52 @@ A powerful, intuitive terminal-based Kubernetes cluster manager built with Go an
 - 📜 **Cluster Log Viewer** - Centralized log streaming from system namespaces with search/follow
 - ⚡ **High Performance** - Optimized for large clusters with caching and efficient streaming
 
-## 🚀 Quick Install
+## 🚀 Installation
 
-### One-line Installation (Linux/macOS)
+### 📦 Independent Installation
 
-```bash
-curl -sSL https://raw.githubusercontent.com/anindyar/kuber/main/install.sh | sh
-```
+Choose the version that best fits your needs:
 
-This will download the latest release and install it to `/usr/local/bin/kuber`.
-
-### Manual Installation
-
-#### Download Pre-built Binary
-
-1. Download the latest release for your platform from the [releases page](https://github.com/anindyar/kuber/releases)
-2. Extract and install:
+#### Install kUber (Full-Featured Manager)
 
 ```bash
-# For Linux x64
+# One-line installation
+curl -sSL https://raw.githubusercontent.com/anindyar/kuber/main/install.sh | sh -s kuber
+
+# Or download manually
 wget https://github.com/anindyar/kuber/releases/latest/download/kuber-linux-amd64.tar.gz
 tar -xzf kuber-linux-amd64.tar.gz
 sudo mv kuber /usr/local/bin/
 chmod +x /usr/local/bin/kuber
 ```
 
-#### Build from Source
+#### Install kTop (Lightweight Monitoring)
+
+```bash
+# One-line installation
+curl -sSL https://raw.githubusercontent.com/anindyar/kuber/main/install.sh | sh -s ktop
+
+# Or download manually
+wget https://github.com/anindyar/kuber/releases/latest/download/ktop-linux-amd64.tar.gz
+tar -xzf ktop-linux-amd64.tar.gz
+sudo mv ktop /usr/local/bin/
+chmod +x /usr/local/bin/ktop
+```
+
+#### Install Both Tools
+
+```bash
+# Install both kUber and kTop
+curl -sSL https://raw.githubusercontent.com/anindyar/kuber/main/install.sh | sh
+
+# Or build both from source
+git clone https://github.com/anindyar/kuber.git
+cd kuber
+make build-all
+sudo make install
+```
+
+### 🏗️ Build from Source
 
 **Prerequisites:**
 - Go 1.24 or later
@@ -57,15 +97,20 @@ chmod +x /usr/local/bin/kuber
 git clone https://github.com/anindyar/kuber.git
 cd kuber
 
-# Build the application
-make build
+# Build specific version
+make build-kuber  # Full-featured kUber
+make build-ktop   # Lightweight kTop
+
+# Or build both at once
+make build-all
 
 # Install to system
-sudo make install
+sudo make install  # Installs both kuber and ktop
 ```
 
 ## 🎯 Quick Start
 
+### kUber (Full-Featured)
 ```bash
 # Launch with default kubectl context
 kuber
@@ -77,22 +122,40 @@ kuber --context=my-cluster
 kuber --kubeconfig=/path/to/config
 ```
 
+### kTop (Monitoring Only)
+```bash
+# Launch lightweight monitoring tool
+ktop
+
+# Use specific context
+ktop --context=my-cluster
+
+# Use custom kubeconfig
+ktop --kubeconfig=/path/to/config
+```
+
 ### 🎮 Basic Controls
 
+#### Common Controls (Both kUber & kTop)
 | Key | Action |
 |-----|--------|
-| `Tab` | Switch between panels |
 | `↑/↓` | Navigate lists |
 | `Enter` | Select/view details |
-| `l` | View pod logs |
+| `Tab` | Switch between panels |
 | `c` | View cluster logs |
-| `f` | Toggle log follow mode |
 | `r` | Refresh current view |
+| `/` | Search/filter logs |
+| `l` | View pod logs |
+| `f` | Toggle log follow mode |
 | `s` | Open pod shell |
-| `e` | Edit resource |
-| `/` | Search/filter |
+| `d` | Describe resource |
 | `Esc` | Go back/cancel |
 | `q` | Quit |
+
+#### kUber-Only Controls (Full Version)
+| Key | Action |
+|-----|--------|
+| `e` | **Edit resource (NEW!)** |
 | `h` | Show help |
 
 ## 📖 Usage Examples
@@ -125,12 +188,24 @@ The main dashboard now shows comprehensive cluster information:
 4. Each log line is prefixed with `[pod-name]` for identification
 5. Search functionality works across all pod logs
 
-### Resource Editing
-1. Select any resource (ConfigMap, Deployment, etc.)
-2. Press `e` to open the YAML editor
-3. Make your changes
-4. Press `Ctrl+S` to save
-5. Changes are applied directly to the cluster
+### Resource Editing 🆕
+The new YAML editor provides full resource editing capabilities:
+
+1. Navigate to any **Resource** (ConfigMaps, Deployments, Services, etc.)
+2. Select a resource and press `e` to open the YAML editor
+3. Edit the YAML using familiar vim-like controls:
+   - **Ctrl+S**: Save changes to cluster
+   - **Ctrl+Z**: Undo changes (revert to original)
+   - **Esc**: Cancel editing (warns if unsaved changes)
+4. Real-time validation and error reporting
+5. Changes are applied directly using `kubectl apply`
+
+#### Supported Resources for Editing:
+- 📄 **ConfigMaps & Secrets** - Configuration management
+- 🚀 **Deployments & StatefulSets** - Workload updates  
+- 🌐 **Services & Ingresses** - Network configuration
+- 📊 **PersistentVolumes & PVCs** - Storage management
+- 🔧 **All other Kubernetes resources** - Full API support
 
 ### Shell Access
 1. Navigate to a running pod
@@ -260,18 +335,53 @@ go test ./src/libraries/tui-components/...
 ### Building
 
 ```bash
-# Development build
-make build-dev
-
-# Production build
-make build
-
-# Cross-platform builds
+# Build both versions
 make build-all
 
-# Create release
+# Build specific versions
+make build-kuber  # Full kUber 
+make build-ktop   # Lightweight kTop
+
+# Cross-platform builds
+make build-cross
+
+# Create release packages
 make release
 ```
+
+## 🔄 kUber vs kTop Comparison
+
+| Feature | kUber (Full) | kTop (Monitoring) |
+|---------|-------------|------------------|
+| **Core Monitoring** | ✅ Full dashboard | ✅ Full dashboard |
+| **Cluster Logs** | ✅ Full access | ✅ Full access (read-only) |  
+| **Namespace Navigation** | ✅ Yes | ✅ Yes |
+| **Resource Navigation** | ✅ All resource types | ✅ All resource types |
+| **Resource Editing** | ✅ **YAML Editor** | ❌ Read-only |
+| **Pod Shell Access** | ✅ Interactive | ✅ Interactive |
+| **Pod Log Streaming** | ✅ Full streaming | ✅ Full streaming |
+| **Resource Details** | ✅ Full details | ✅ Full details |
+| **Search & Follow** | ✅ Advanced | ✅ Advanced |
+| **Resource Description** | ✅ Yes | ✅ Yes |
+| **Memory Usage** | 20-50MB | 15-30MB |
+| **Security Level** | Medium | High (read-only) |
+| **Target Users** | DevOps, Admins | Ops, Security, Monitoring |
+
+### When to Use Each:
+
+**🚀 Use kUber when:**
+- Developing or debugging applications
+- Need to edit resource configurations
+- Require shell access to containers
+- Managing cluster resources actively
+- Working in development/staging environments
+
+**📊 Use kTop when:**
+- Production monitoring and observability  
+- Security-sensitive environments requiring read-only access
+- CI/CD pipelines and automation
+- Need full cluster inspection without modification risks
+- Lightweight resource monitoring with full feature set
 
 ## 🤝 Contributing
 
