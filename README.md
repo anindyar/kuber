@@ -13,11 +13,13 @@ A powerful, intuitive terminal-based Kubernetes cluster manager built with Go an
 - 🔄 **Real-time Log Streaming** - Live log following with keyword search and highlighting
 - 🐳 **Multi-container Support** - Automatic container detection and selection
 - 📈 **Aggregated Logging** - Stream logs from multiple pods in deployments/statefulsets  
-- 🔍 **Advanced Search** - Real-time keyword filtering with highlighting
+- 🔍 **Advanced Search** - Real-time keyword filtering with persistent search during follow mode
 - 🎯 **Resource Editing** - In-terminal YAML editor with validation
 - 🖥️ **Shell Access** - Direct pod shell access from the interface
-- 📊 **Metrics Integration** - Performance monitoring and metrics display
-- ⚡ **High Performance** - Optimized for large clusters with caching
+- 📊 **Enhanced Dashboard** - Performance monitor with cluster metrics and resource utilization
+- 🖥️ **Multi-Node Monitoring** - Real-time resource pressure across all cluster nodes
+- 📜 **Cluster Log Viewer** - Centralized log streaming from system namespaces with search/follow
+- ⚡ **High Performance** - Optimized for large clusters with caching and efficient streaming
 
 ## 🚀 Quick Install
 
@@ -83,7 +85,9 @@ kuber --kubeconfig=/path/to/config
 | `↑/↓` | Navigate lists |
 | `Enter` | Select/view details |
 | `l` | View pod logs |
+| `c` | View cluster logs |
 | `f` | Toggle log follow mode |
+| `r` | Refresh current view |
 | `s` | Open pod shell |
 | `e` | Edit resource |
 | `/` | Search/filter |
@@ -93,7 +97,21 @@ kuber --kubeconfig=/path/to/config
 
 ## 📖 Usage Examples
 
-### Viewing Logs
+### Enhanced Dashboard
+The main dashboard now shows comprehensive cluster information:
+- **📊 Cluster Performance Monitor**: Real-time CPU, memory, and storage utilization
+- **📈 Resource Pressure Metrics**: Multi-node resource pressure analysis  
+- **🖥️ Per-Node Status**: Individual node health with resource scores
+- **📊 Workload Counts**: Live counts of deployments, pods, services, etc.
+
+### Cluster Log Monitoring
+1. From the main dashboard, press `c` to access cluster logs
+2. View aggregated logs from system namespaces (kube-system, default, cattle-system)
+3. Use `/` to search across all cluster logs
+4. Press `f` to enable live streaming mode
+5. Press `r` to manually refresh log content
+
+### Viewing Pod Logs
 1. Navigate to **Pods** in the sidebar
 2. Select a pod and press `l`
 3. Press `f` to enable real-time streaming

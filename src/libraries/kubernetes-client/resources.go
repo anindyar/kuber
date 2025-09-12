@@ -723,3 +723,123 @@ func convertKubernetesPersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim) (
 
 	return resource, nil
 }
+
+// getNodes retrieves all nodes from the cluster
+func (kc *KubernetesClient) getNodes(ctx context.Context) ([]*models.Resource, error) {
+	nodeList, err := kc.clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	var resources []*models.Resource
+	for _, node := range nodeList.Items {
+		resource, err := convertKubernetesNode(&node)
+		if err != nil {
+			continue // Skip invalid nodes
+		}
+		resources = append(resources, resource)
+	}
+
+	return resources, nil
+}
+
+// convertKubernetesNode converts a Kubernetes Node to our resource model
+func convertKubernetesNode(node *corev1.Node) (*models.Resource, error) {
+	metadata := models.Metadata{
+		Name:              node.Name,
+		Namespace:         "", // Nodes are cluster-scoped
+		UID:               string(node.UID),
+		ResourceVersion:   node.ResourceVersion,
+		Generation:        node.Generation,
+		CreationTimestamp: node.CreationTimestamp.Time,
+		Labels:            node.Labels,
+		Annotations:       node.Annotations,
+	}
+
+	if node.DeletionTimestamp != nil {
+		metadata.DeletionTimestamp = &node.DeletionTimestamp.Time
+	}
+
+	resource, err := models.NewResource("Node", "v1", metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy labels and annotations
+	if node.Labels != nil {
+		for k, v := range node.Labels {
+			resource.SetLabel(k, v)
+		}
+	}
+
+	if node.Annotations != nil {
+		for k, v := range node.Annotations {
+			resource.SetAnnotation(k, v)
+		}
+	}
+
+	// Extract node status information
+	for _, condition := range node.Status.Conditions {
+		conditionKey := fmt.Sprintf("condition_%s", condition.Type)
+		resource.Status[conditionKey] = string(condition.Status)
+
+		// Special handling for Ready condition
+		if condition.Type == corev1.NodeReady {
+			resource.Status["ready"] = string(condition.Status)
+			if condition.Status == corev1.ConditionTrue {
+				resource.Status["phase"] = "Ready"
+			} else {
+				resource.Status["phase"] = "NotReady"
+			}
+		}
+	}
+
+	// Set node capacity and allocatable resources
+	if node.Status.Capacity != nil {
+		resource.Status["capacity"] = node.Status.Capacity
+		// Extract specific capacity metrics
+		if cpu, ok := node.Status.Capacity[corev1.ResourceCPU]; ok {
+			resource.Status["capacity_cpu"] = cpu.String()
+		}
+		if memory, ok := node.Status.Capacity[corev1.ResourceMemory]; ok {
+			resource.Status["capacity_memory"] = memory.String()
+		}
+		if storage, ok := node.Status.Capacity[corev1.ResourceEphemeralStorage]; ok {
+			resource.Status["capacity_storage"] = storage.String()
+		}
+	}
+
+	if node.Status.Allocatable != nil {
+		resource.Status["allocatable"] = node.Status.Allocatable
+		// Extract specific allocatable metrics
+		if cpu, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
+			resource.Status["allocatable_cpu"] = cpu.String()
+		}
+		if memory, ok := node.Status.Allocatable[corev1.ResourceMemory]; ok {
+			resource.Status["allocatable_memory"] = memory.String()
+		}
+		if storage, ok := node.Status.Allocatable[corev1.ResourceEphemeralStorage]; ok {
+			resource.Status["allocatable_storage"] = storage.String()
+		}
+	}
+
+	// Set node info
+	if node.Status.NodeInfo.KubeletVersion != "" {
+		resource.Status["kubelet_version"] = node.Status.NodeInfo.KubeletVersion
+	}
+	if node.Status.NodeInfo.OSImage != "" {
+		resource.Status["os_image"] = node.Status.NodeInfo.OSImage
+	}
+	if node.Status.NodeInfo.Architecture != "" {
+		resource.Status["architecture"] = node.Status.NodeInfo.Architecture
+	}
+	if node.Status.NodeInfo.KernelVersion != "" {
+		resource.Status["kernel_version"] = node.Status.NodeInfo.KernelVersion
+	}
+
+	// Update computed fields
+	resource.UpdateAge()
+	resource.ComputeStatus()
+
+	return resource, nil
+}

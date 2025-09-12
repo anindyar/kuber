@@ -178,6 +178,8 @@ func (kc *KubernetesClient) GetResources(ctx context.Context, resourceType, name
 	}
 
 	switch resourceType {
+	case "nodes":
+		return kc.getNodes(ctx)
 	case "pods":
 		return kc.getPods(ctx, namespace)
 	case "services":
