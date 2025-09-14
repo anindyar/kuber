@@ -221,6 +221,11 @@ func (tc *TableComponent) ShowFooter(show bool) {
 	tc.showFooter = show
 }
 
+// SetColumns updates the table columns
+func (tc *TableComponent) SetColumns(columns []table.Column) {
+	tc.table.SetColumns(columns)
+}
+
 // applyFilter filters the rows based on the filter text
 func (tc *TableComponent) applyFilter() {
 	if tc.filterText == "" {

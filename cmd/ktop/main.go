@@ -329,6 +329,9 @@ func (app *Application) initializeComponents() error {
 
 	app.resourceTabs = tuicomponents.NewListComponent(resourceTypes, "Resource Types")
 	app.resourceTabs.SetTitle("📋 Resources")
+	app.resourceTabs.SetShowFilter(false) // Disable filtering for resource tabs
+	app.resourceTabs.SetShowHelp(false)   // Disable help for cleaner UI
+	app.resourceTabs.SetShowStatusBar(false) // Clean up the tabs view
 	
 	return nil
 }
@@ -412,10 +415,7 @@ func (app *Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						if listItem, ok := selectedItem.(tuicomponents.ListItem); ok {
 							if data := listItem.Data(); data != nil {
 								if resourceType, ok := data.(string); ok {
-									// Switch focus to table and load resources
-									app.activeComponent = app.resourceTable
-									app.resourceTable.Focus()
-									app.resourceTabs.Blur()
+									// Update the resource type and reload resources
 									app.currentResourceType = resourceType
 									return app, app.loadNamespaceResources(app.selectedNamespace)
 								}
@@ -423,15 +423,37 @@ func (app *Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 					return app, nil
-				} else {
-					// Handle pod selection for logs
-					return app, app.selectPodForLogs()
+				} else if app.activeComponent == app.resourceTable {
+					// Handle resource selection based on type
+					selectedRow := app.resourceTable.GetSelectedRow()
+					if selectedRow != nil && len(selectedRow) > 0 {
+						if app.currentResourceType == "pods" {
+							// For pods, view logs
+							return app, app.selectPodForLogs()
+						} else {
+							// For other resources, view details
+							app.currentView = ViewDetails
+							return app, app.loadResourceDetails(app.selectedNamespace, app.currentResourceType, selectedRow[0])
+						}
+					}
 				}
 			}
 		case "l":
 			if app.currentView == ViewResources {
-				// View logs for selected pod
-				return app, app.selectPodForLogs()
+				// View logs for pods, deployments, statefulsets
+				if app.currentResourceType == "pods" {
+					return app, app.selectPodForLogs()
+				} else if app.currentResourceType == "deployments" || app.currentResourceType == "statefulsets" {
+					// View aggregated logs for workload resources
+					selectedRow := app.resourceTable.GetSelectedRow()
+					if selectedRow != nil && len(selectedRow) > 0 {
+						return app, app.selectWorkloadForLogs(selectedRow[0])
+					}
+				} else {
+					return app, func() tea.Msg {
+						return InfoMsg{Info: fmt.Sprintf("Logs are not available for %s resources. Only pods, deployments, and statefulsets support log viewing.", app.currentResourceType)}
+					}
+				}
 			}
 		case "f":
 			if app.currentView == ViewLogs {
@@ -451,16 +473,22 @@ func (app *Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return app, nil
 			}
 		case "s":
-			if app.currentView == ViewResources && app.currentResourceType == "pods" {
-				selectedRow := app.resourceTable.GetSelectedRow()
-				if selectedRow != nil {
-					return app, app.execShell(selectedRow[0])
+			if app.currentView == ViewResources {
+				if app.currentResourceType == "pods" {
+					selectedRow := app.resourceTable.GetSelectedRow()
+					if selectedRow != nil && len(selectedRow) > 0 {
+						return app, app.execShell(selectedRow[0])
+					}
+				} else {
+					return app, func() tea.Msg {
+						return InfoMsg{Info: fmt.Sprintf("Shell access is only available for pods. Current view: %s", app.currentResourceType)}
+					}
 				}
 			}
 		case "d":
 			if app.currentView == ViewResources {
 				selectedRow := app.resourceTable.GetSelectedRow()
-				if selectedRow != nil {
+				if selectedRow != nil && len(selectedRow) > 0 {
 					app.currentView = ViewDetails
 					return app, app.loadResourceDetails(app.selectedNamespace, app.currentResourceType, selectedRow[0])
 				}
@@ -476,11 +504,29 @@ func (app *Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					app.namespaceList = list
 				}
 				cmds = append(cmds, cmd)
-			} else if app.currentView == ViewResources && app.resourceTable != nil {
+			} else if app.currentView == ViewResources {
+				// Forward to the active component in resource view
+				if app.activeComponent == app.resourceTabs && app.resourceTabs != nil {
+					var updatedComponent tuicomponents.Component
+					updatedComponent, cmd = app.resourceTabs.Update(msg)
+					if list, ok := updatedComponent.(*tuicomponents.ListComponent); ok {
+						app.resourceTabs = list
+					}
+					cmds = append(cmds, cmd)
+				} else if app.activeComponent == app.resourceTable && app.resourceTable != nil {
+					var updatedComponent tuicomponents.Component
+					updatedComponent, cmd = app.resourceTable.Update(msg)
+					if table, ok := updatedComponent.(*tuicomponents.TableComponent); ok {
+						app.resourceTable = table
+					}
+					cmds = append(cmds, cmd)
+				}
+			} else if (app.currentView == ViewDetails || app.currentView == ViewLogs || app.currentView == ViewClusterLogs) && app.detailViewport != nil {
+				// Forward to viewport for detail views
 				var updatedComponent tuicomponents.Component
-				updatedComponent, cmd = app.resourceTable.Update(msg)
-				if table, ok := updatedComponent.(*tuicomponents.TableComponent); ok {
-					app.resourceTable = table
+				updatedComponent, cmd = app.detailViewport.Update(msg)
+				if viewport, ok := updatedComponent.(*tuicomponents.ViewportComponent); ok {
+					app.detailViewport = viewport
 				}
 				cmds = append(cmds, cmd)
 			}

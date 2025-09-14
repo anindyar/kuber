@@ -34,21 +34,31 @@ func (app *Application) switchActiveComponent() {
 
 	case ViewNamespaces:
 		app.activeComponent = app.namespaceList
+		if app.namespaceList != nil {
+			app.namespaceList.Focus()
+		}
 
 	case ViewResources:
 		// Toggle between resource tabs and resource table
 		if app.activeComponent == app.resourceTabs {
 			app.activeComponent = app.resourceTable
+			if app.resourceTable != nil {
+				app.resourceTable.Focus()
+				app.resourceTabs.Blur()
+			}
 		} else {
 			app.activeComponent = app.resourceTabs
+			if app.resourceTabs != nil {
+				app.resourceTabs.Focus()
+				app.resourceTable.Blur()
+			}
 		}
 
 	case ViewDetails, ViewLogs, ViewClusterLogs:
 		app.activeComponent = app.detailViewport
-	}
-
-	if app.activeComponent != nil {
-		app.activeComponent.Focus()
+		if app.detailViewport != nil {
+			app.detailViewport.Focus()
+		}
 	}
 }
 
@@ -68,10 +78,17 @@ func (app *Application) selectNamespace() tea.Cmd {
 		namespaceName := listItem.Title()
 		app.selectedNamespace = namespaceName
 		
-		// Navigate to resource view to show pods for log viewing
+		// Navigate to resource view with tabs active first
 		app.currentView = ViewResources
 		app.currentResourceType = "pods"
-		app.switchActiveComponent()
+		// Set resource tabs as active initially
+		app.activeComponent = app.resourceTabs
+		if app.resourceTabs != nil {
+			app.resourceTabs.Focus()
+		}
+		if app.resourceTable != nil {
+			app.resourceTable.Blur()
+		}
 		
 		return app.loadNamespaceResources(namespaceName)
 	}
