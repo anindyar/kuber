@@ -63,14 +63,13 @@ chmod +x /usr/local/bin/kuber
 #### Install kTop (Lightweight Monitoring)
 
 ```bash
-# One-line installation
-curl -sSL https://raw.githubusercontent.com/anindyar/kuber/main/install.sh | sh -s ktop
+# One-line installation (Recommended)
+curl -fsSL https://raw.githubusercontent.com/anindyar/kuber/main/install-ktop.sh | bash
 
-# Or download manually
-wget https://github.com/anindyar/kuber/releases/latest/download/ktop-linux-amd64.tar.gz
-tar -xzf ktop-linux-amd64.tar.gz
-sudo mv ktop /usr/local/bin/
-chmod +x /usr/local/bin/ktop
+# Alternative download
+wget https://raw.githubusercontent.com/anindyar/kuber/main/install-ktop.sh
+chmod +x install-ktop.sh
+./install-ktop.sh
 ```
 
 #### Install Both Tools

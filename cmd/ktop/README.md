@@ -18,6 +18,22 @@ A lightweight, read-only terminal interface for monitoring Kubernetes clusters w
 
 ## 🚀 Quick Install
 
+### One-Line Installer (Recommended)
+
+```bash
+# Install kTop directly to /usr/local/bin
+curl -fsSL https://raw.githubusercontent.com/anindyar/kuber/main/install-ktop.sh | bash
+```
+
+### Alternative Install Methods
+
+```bash
+# Download and install manually
+wget https://raw.githubusercontent.com/anindyar/kuber/main/install-ktop.sh
+chmod +x install-ktop.sh
+./install-ktop.sh
+```
+
 ### Build from Source
 
 ```bash
@@ -47,21 +63,32 @@ ktop --kubeconfig=/path/to/config
 
 ### 🎮 Controls
 
+**Main Navigation:**
 | Key | Action |
 |-----|--------|
-| `Enter` | Navigate to namespaces view |
-| `↑/↓` | Navigate lists |
-| `c` | View cluster logs |
+| `Enter` | Navigate forward/Select resource |
+| `↑/↓` | Navigate lists and tables |
+| `Tab` | Switch between panes (tabs ↔ table) |
+| `c` | View cluster logs (from dashboard) |
 | `r` | Refresh current view |
 | `Esc` | Go back/cancel |
-| `q` | Quit |
+| `q` | Quit application |
+
+**Resource View Controls:**
+| Key | Action |
+|-----|--------|
+| `l` | View logs (pods/deployments/statefulsets) |
+| `d` | View resource details |
+| `s` | Shell access (pods only - limited) |
+| `Enter` | Select resource or view logs |
 
 **Log View Controls:**
 | Key | Action |
 |-----|--------|
 | `/` | Search/filter logs |
+| `f` | Toggle follow mode |
 | `r` | Refresh logs |
-| `Esc` | Exit search mode |
+| `Esc` | Exit search mode or go back |
 
 ## 📖 Usage Examples
 
@@ -79,11 +106,20 @@ The main dashboard provides:
 4. Press `r` to manually refresh log content
 5. Press `Esc` to return to dashboard
 
-### Namespace Navigation
+### Resource Navigation  
 1. From dashboard, press `Enter` to view namespaces
-2. Navigate through available namespaces
-3. View namespace details and resource counts
-4. Press `Esc` to return to dashboard
+2. Select a namespace with `Enter` to view resources
+3. Use `Tab` to switch between resource types (left) and resource table (right)
+4. Navigate resources with arrow keys, press `Enter` or `l` to view logs
+5. For deployments/statefulsets, `l` shows aggregated logs from all pods
+6. Press `d` to view detailed resource information
+7. Use `Esc` to navigate back through the hierarchy
+
+### Log Viewing
+- **Pod logs**: Direct kubectl logs output 
+- **Deployment/StatefulSet logs**: Aggregated logs from all associated pods
+- **Search functionality**: Use `/` to filter logs in real-time
+- **Debug mode**: Shows pod discovery process when no logs found
 
 ## 🏗️ Architecture
 
@@ -162,9 +198,11 @@ make build-ktop
 | Feature | kTop | kUber |
 |---------|------|-------|
 | **Monitoring** | ✅ Full | ✅ Full |
-| **Log Viewing** | ✅ Read-only | ✅ Full |
+| **Log Viewing** | ✅ Read-only + Aggregated | ✅ Full |
+| **Resource Navigation** | ✅ Full | ✅ Full |
 | **Resource Editing** | ❌ No | ✅ Yes |
-| **Shell Access** | ❌ No | ✅ Yes |
+| **Shell Access** | ⚠️ Limited (pods only) | ✅ Full |
+| **Deployment Logs** | ✅ Aggregated | ✅ Full |
 | **Memory Usage** | 15-30MB | 20-50MB |
 | **Security** | High (read-only) | Medium |
 | **Use Case** | Production monitoring | Development/Admin |
@@ -191,8 +229,15 @@ kubectl auth can-i list nodes
 
 **Log Access Issues**
 - Ensure you have read permissions for system namespaces
-- Verify RBAC permissions for log access
+- Verify RBAC permissions for log access  
 - Check if kubectl can access logs manually
+- For deployment logs: verify pods exist and are running
+- Use debug mode (press `l` on deployment) to see pod discovery process
+
+**Navigation Issues**
+- Use `Tab` to switch between resource tabs and table
+- Arrow keys work in both panes when focused
+- Resource-specific actions shown in status hints
 
 ## 📜 License
 
